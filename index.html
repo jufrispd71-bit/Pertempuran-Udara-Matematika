@@ -100,6 +100,9 @@
         .p3-border { border-color: #10b981; }
         .p3-text { color: #34d399; }
         .p3-bg { background-color: rgba(16, 185, 129, 0.18); }
+        .p4-border { border-color: #c084fc; }
+        .p4-text { color: #e879f9; }
+        .p4-bg { background-color: rgba(192, 132, 252, 0.18); }
 
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
@@ -156,7 +159,7 @@
                         PERTEMPURAN UDARA MATEMATIKA
                     </h2>
                     <p class="text-slate-300 text-[10px] sm:text-xs max-w-xl mx-auto">
-                        Pilih Operasi Matematika & Tingkat Kesulitan untuk Memulai Misi Pertempuran 3 Pilot!
+                        Pilih Operasi Matematika & Tingkat Kesulitan untuk Memulai Misi Pertempuran!
                     </p>
                 </div>
 
@@ -191,10 +194,29 @@
                     </div>
                 </div>
 
+                <!-- Player Count Selection (1, 2, 3, 4 Players) -->
+                <div class="space-y-0.5 pt-1">
+                    <label class="text-[9px] sm:text-xs uppercase tracking-wider text-amber-400 font-semibold">Pilih Jumlah Pemain:</label>
+                    <div class="flex flex-wrap justify-center gap-1.5">
+                        <button onclick="selectPlayerCount(1)" id="cnt-btn-1" class="player-count-btn px-3 py-1 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold font-orbitron text-[10px] sm:text-xs transition">
+                            <i class="fa-solid fa-user mr-1"></i> 1 Pemain
+                        </button>
+                        <button onclick="selectPlayerCount(2)" id="cnt-btn-2" class="player-count-btn px-3 py-1 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold font-orbitron text-[10px] sm:text-xs transition">
+                            <i class="fa-solid fa-user-group mr-1"></i> 2 Pemain
+                        </button>
+                        <button onclick="selectPlayerCount(3)" id="cnt-btn-3" class="player-count-btn px-3 py-1 rounded-lg bg-amber-950/60 border border-amber-500 text-amber-300 font-bold font-orbitron text-[10px] sm:text-xs transition">
+                            <i class="fa-solid fa-users mr-1"></i> 3 Pemain
+                        </button>
+                        <button onclick="selectPlayerCount(4)" id="cnt-btn-4" class="player-count-btn px-3 py-1 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold font-orbitron text-[10px] sm:text-xs transition">
+                            <i class="fa-solid fa-users-line mr-1"></i> 4 Pemain
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Multiplayer Setup Mode Options -->
                 <div class="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row justify-center gap-2">
                     <button onclick="startBattle('local')" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black font-orbitron text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition">
-                        <i class="fa-solid fa-play mr-1"></i> MAIN 3 PILOT (1 LAYAR/HP)
+                        <i class="fa-solid fa-play mr-1"></i> MULAI PERTEMPURAN (<span id="btn-player-label">3 PILOT</span>)
                     </button>
                     <button onclick="openMultiDeviceModal()" class="px-3 py-1.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold border border-blue-500/50 rounded-xl text-xs transition flex items-center justify-center">
                         <i class="fa-solid fa-mobile-screen-button mr-1 text-xs"></i> Mode Multi-HP
@@ -229,11 +251,11 @@
                 </div>
             </div>
 
-            <!-- Bottom 3 Pilots Interactive Response Panels Container -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-1 sm:gap-2 w-full pointer-events-auto shrink-0 pb-1 max-h-[50dvh] overflow-y-auto">
+            <!-- Dynamic Interactive Pilots Response Panels Container -->
+            <div id="pilots-hud-container" class="grid grid-cols-1 md:grid-cols-3 gap-1 sm:gap-2 w-full pointer-events-auto shrink-0 pb-1 max-h-[50dvh] overflow-y-auto">
                 
                 <!-- PILOT 1 ALPHA PANEL -->
-                <div class="military-panel p1-border p1-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
+                <div id="panel-p1" class="military-panel p1-border p1-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
                     <div class="flex justify-between items-center border-b border-red-500/30 pb-0.5">
                         <div class="flex items-center space-x-1">
                             <span class="w-2 h-2 rounded-full bg-red-500 inline-block animate-ping"></span>
@@ -241,12 +263,11 @@
                         </div>
                         <span id="p1-score" class="font-orbitron font-bold text-[11px] sm:text-xs text-white">0 PTS</span>
                     </div>
-                    <!-- Option Buttons container for Pilot 1 -->
                     <div id="p1-options" class="grid grid-cols-2 gap-1"></div>
                 </div>
 
                 <!-- PILOT 2 BRAVO PANEL -->
-                <div class="military-panel p2-border p2-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
+                <div id="panel-p2" class="military-panel p2-border p2-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
                     <div class="flex justify-between items-center border-b border-blue-500/30 pb-0.5">
                         <div class="flex items-center space-x-1">
                             <span class="w-2 h-2 rounded-full bg-blue-500 inline-block animate-ping"></span>
@@ -254,12 +275,11 @@
                         </div>
                         <span id="p2-score" class="font-orbitron font-bold text-[11px] sm:text-xs text-white">0 PTS</span>
                     </div>
-                    <!-- Option Buttons container for Pilot 2 -->
                     <div id="p2-options" class="grid grid-cols-2 gap-1"></div>
                 </div>
 
                 <!-- PILOT 3 CHARLIE PANEL -->
-                <div class="military-panel p3-border p3-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
+                <div id="panel-p3" class="military-panel p3-border p3-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
                     <div class="flex justify-between items-center border-b border-emerald-500/30 pb-0.5">
                         <div class="flex items-center space-x-1">
                             <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
@@ -267,9 +287,56 @@
                         </div>
                         <span id="p3-score" class="font-orbitron font-bold text-[11px] sm:text-xs text-white">0 PTS</span>
                     </div>
-                    <!-- Option Buttons container for Pilot 3 -->
                     <div id="p3-options" class="grid grid-cols-2 gap-1"></div>
                 </div>
+
+                <!-- PILOT 4 DELTA PANEL -->
+                <div id="panel-p4" class="military-panel p4-border p4-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
+                    <div class="flex justify-between items-center border-b border-purple-500/30 pb-0.5">
+                        <div class="flex items-center space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-purple-500 inline-block animate-ping"></span>
+                            <span class="font-orbitron font-bold p4-text text-[11px] sm:text-xs">P4: PILOT DELTA</span>
+                        </div>
+                        <span id="p4-score" class="font-orbitron font-bold text-[11px] sm:text-xs text-white">0 PTS</span>
+                    </div>
+                    <div id="p4-options" class="grid grid-cols-2 gap-1"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- REMOTE CONTROLLER HP SISWA SCREEN -->
+        <div id="screen-remote-controller" class="hidden flex-1 flex flex-col justify-center items-center p-3 bg-slate-950 pointer-events-auto z-40">
+            <div class="max-w-sm w-full military-panel rounded-2xl p-4 text-center space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-gamepad text-amber-400"></i>
+                        <span id="remote-pilot-name" class="font-orbitron font-bold text-amber-300">PILOT CONTROLLER</span>
+                    </div>
+                    <span id="remote-status-badge" class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/40">TERHUBUNG</span>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-400 font-semibold block">Pilih Peran Pilot Anda:</label>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="setRemotePlayerIndex(0)" id="pilot-select-0" class="py-1.5 rounded-lg bg-red-900/60 border border-red-500 text-red-200 font-bold font-orbitron text-xs">P1 Alpha</button>
+                        <button onclick="setRemotePlayerIndex(1)" id="pilot-select-1" class="py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold font-orbitron text-xs">P2 Bravo</button>
+                        <button onclick="setRemotePlayerIndex(2)" id="pilot-select-2" class="py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold font-orbitron text-xs">P3 Charlie</button>
+                        <button onclick="setRemotePlayerIndex(3)" id="pilot-select-3" class="py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold font-orbitron text-xs">P4 Delta</button>
+                    </div>
+                </div>
+
+                <div class="py-2 bg-slate-900/90 rounded-xl border border-amber-500/30">
+                    <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider mb-1">Kendalikan Tembakan Target:</span>
+                    <div class="grid grid-cols-2 gap-2 p-2">
+                        <button onclick="sendRemoteAnswer(0)" class="p-4 bg-amber-600 hover:bg-amber-500 active:scale-95 text-slate-950 font-black font-orbitron text-lg rounded-xl shadow-lg">TARGET 1</button>
+                        <button onclick="sendRemoteAnswer(1)" class="p-4 bg-amber-600 hover:bg-amber-500 active:scale-95 text-slate-950 font-black font-orbitron text-lg rounded-xl shadow-lg">TARGET 2</button>
+                        <button onclick="sendRemoteAnswer(2)" class="p-4 bg-amber-600 hover:bg-amber-500 active:scale-95 text-slate-950 font-black font-orbitron text-lg rounded-xl shadow-lg">TARGET 3</button>
+                        <button onclick="sendRemoteAnswer(3)" class="p-4 bg-amber-600 hover:bg-amber-500 active:scale-95 text-slate-950 font-black font-orbitron text-lg rounded-xl shadow-lg">TARGET 4</button>
+                    </div>
+                </div>
+
+                <p class="text-[10px] text-slate-400">Tekan tombol target sesuai dengan angka jawaban pada layar utama guru/proyektor!</p>
             </div>
         </div>
 
@@ -337,16 +404,30 @@
     <div id="modal-multidevice" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
         <div class="max-w-md w-full military-panel rounded-2xl p-6 space-y-4 text-center">
             <h3 class="font-orbitron font-bold text-lg text-blue-400"><i class="fa-solid fa-mobile-screen-button mr-2"></i>Koneksi Multi-HP (Peer2Peer)</h3>
-            <p class="text-xs text-slate-300">Gunakan ID ini untuk menghubungkan HP siswa sebagai remote kendali pilot individual!</p>
+            <p class="text-xs text-slate-300">Gunakan ID Ruang ini untuk menghubungkan HP siswa sebagai controller pilot!</p>
             
-            <div class="p-3 bg-slate-900 rounded-xl border border-blue-500/40">
-                <span class="text-xs text-slate-400 block uppercase">ID Ruang Sesi Utama:</span>
-                <span id="peer-room-id" class="text-2xl font-black font-orbitron text-amber-400 tracking-wider">CONNECTING...</span>
+            <div class="p-3 bg-slate-900 rounded-xl border border-blue-500/40 relative">
+                <span class="text-xs text-slate-400 block uppercase font-bold tracking-wider mb-1">ID Ruang Sesi Utama (Layar Guru):</span>
+                <div class="flex items-center justify-center space-x-2">
+                    <span id="peer-room-id" class="text-xl sm:text-2xl font-black font-orbitron text-amber-400 tracking-wider">MENGHUBUNGKAN...</span>
+                    <button onclick="copyRoomID()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg border border-slate-600 transition text-xs" title="Salin ID Ruang">
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+                </div>
+                <div id="peer-status-badge" class="mt-1 text-[10px] text-amber-400 font-semibold animate-pulse">
+                    Membuat Server ID...
+                </div>
+                <button onclick="initHostPeer()" class="mt-2 text-[10px] text-blue-400 hover:text-blue-300 underline font-semibold">
+                    <i class="fa-solid fa-rotate mr-1"></i>Buat ID Ruang Baru
+                </button>
             </div>
 
-            <div class="space-y-2 pt-2">
-                <input type="text" id="input-join-id" placeholder="Masukkan ID Sesi Ruang (Untuk Perangkat Siswa)..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-center text-sm text-white focus:outline-none focus:border-blue-500">
-                <button onclick="joinPeerSession()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm transition">Hubungkan Perangkat</button>
+            <div class="space-y-2 pt-2 border-t border-slate-800">
+                <span class="text-xs text-slate-300 font-semibold block">Atau Gabung sebagai HP Controller Siswa:</span>
+                <input type="text" id="input-join-id" placeholder="Masukkan ID Ruang (Contoh: AIR-123)..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-center text-sm text-amber-300 font-bold focus:outline-none focus:border-blue-500 font-orbitron uppercase">
+                <button onclick="joinAsController()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm transition font-orbitron">
+                    <i class="fa-solid fa-plug mr-1"></i> Hubungkan Perangkat Siswa
+                </button>
             </div>
 
             <button onclick="closeMultiDeviceModal()" class="mt-2 text-xs text-slate-400 underline">Tutup Modal</button>
@@ -393,13 +474,11 @@
         function startEngineSound() {
             if (isMuted || !audioCtx) return;
             try {
-                // Main Engine Sawtooth Oscillator
                 engineOscillator = audioCtx.createOscillator();
                 engineGain = audioCtx.createGain();
                 engineOscillator.type = 'sawtooth';
                 engineOscillator.frequency.setValueAtTime(65, audioCtx.currentTime);
 
-                // Sub-Bass Engine Rumble for extra cinematic weight
                 engineSubOsc = audioCtx.createOscillator();
                 const subGain = audioCtx.createGain();
                 engineSubOsc.type = 'sine';
@@ -423,7 +502,6 @@
             }
         }
 
-        // Gunfire Sound Effect (Dogfight Machine Gun Burst)
         function playGunfireSound() {
             if (isMuted || !audioCtx) return;
             try {
@@ -447,13 +525,11 @@
             } catch(e) { console.warn("Gunfire audio error", e); }
         }
 
-        // Massive Heavy Echoing Crash & Explosion Sound
         function playExplosionSound() {
             if (isMuted || !audioCtx) return;
             try {
                 const now = audioCtx.currentTime;
                 
-                // Sub-bass heavy impact
                 const subOsc = audioCtx.createOscillator();
                 const subGain = audioCtx.createGain();
                 subOsc.type = 'sine';
@@ -466,7 +542,6 @@
                 subOsc.start(now);
                 subOsc.stop(now + 2.55);
 
-                // Explosive Noise Buffer
                 const bufferSize = audioCtx.sampleRate * 2.8;
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 const output = buffer.getChannelData(0);
@@ -486,7 +561,6 @@
                 noiseGain.gain.setValueAtTime(2.0, now);
                 noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 2.6);
 
-                // Echo / Reverb Delay Loop
                 const delay = audioCtx.createDelay();
                 delay.delayTime.value = 0.22;
 
@@ -536,7 +610,7 @@
         }
     </script>
 
-    <!-- 3D GRAPHICS SCENE SETUP (THREE.JS WITH PLANE DESTRUCTION) -->
+    <!-- 3D GRAPHICS SCENE SETUP -->
     <script>
         let scene, camera, renderer;
         let playerPlanes = [];
@@ -573,26 +647,38 @@
             createTerrainAndSea();
             createClouds();
 
-            // Player Fighters (Alpha, Bravo, Charlie)
-            const colors = [0xef4444, 0x3b82f6, 0x10b981];
-            for (let i = 0; i < 3; i++) {
+            const colors = [0xef4444, 0x3b82f6, 0x10b981, 0xc084fc];
+            for (let i = 0; i < 4; i++) {
                 const plane = createWW2PlaneMesh(colors[i], false);
-                plane.position.set((i - 1) * 18, 0, 12);
                 scene.add(plane);
                 playerPlanes.push(plane);
             }
+            updatePlayerPlanesPositions();
 
             createTargetEnemies();
             window.addEventListener('resize', onWindowResize);
             animate3D();
         }
 
-        // Detailed WWII Fighter & Enemy Bomber Aircraft Generator
+        function updatePlayerPlanesPositions() {
+            const total = activePlayerCount;
+            const spacing = 14;
+            playerPlanes.forEach((plane, i) => {
+                if (i < total) {
+                    plane.visible = true;
+                    const offset = (i - (total - 1) / 2) * spacing;
+                    plane.position.set(offset, 0, 12);
+                } else {
+                    plane.visible = false;
+                }
+            });
+        }
+
         function createWW2PlaneMesh(primaryColor, isEnemy = false) {
             const group = new THREE.Group();
 
-            // Fuselage Body
-            const bodyGeo = new THREE.ConeGeometry(isEnemy ? 1.6 : 1.2, isEnemy ? 10 : 8.5, 8);
+            // Scale down enemy planes so all 4 fit clearly on mobile portrait/landscape screens
+            const bodyGeo = new THREE.ConeGeometry(isEnemy ? 1.0 : 1.2, isEnemy ? 6.5 : 8.5, 8);
             const bodyMat = new THREE.MeshStandardMaterial({ 
                 color: isEnemy ? 0x27272a : 0x475569, 
                 roughness: 0.3, 
@@ -603,45 +689,40 @@
             body.name = "fuselage";
             group.add(body);
 
-            // Cockpit Canopy Glass
-            const cockpitGeo = new THREE.SphereGeometry(isEnemy ? 0.95 : 0.8, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const cockpitGeo = new THREE.SphereGeometry(isEnemy ? 0.65 : 0.8, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2);
             const cockpitMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0xef4444 : 0x38bdf8, transparent: true, opacity: 0.75 });
             const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
-            cockpit.position.set(0, 0.65, 0.5);
+            cockpit.position.set(0, 0.45, 0.3);
             cockpit.scale.set(0.85, 0.85, 1.8);
             cockpit.name = "cockpit";
             group.add(cockpit);
 
-            // Wings
-            const wingGeo = new THREE.BoxGeometry(isEnemy ? 14 : 12.5, 0.18, 2.4);
+            const wingGeo = new THREE.BoxGeometry(isEnemy ? 8.5 : 12.5, 0.15, 1.8);
             const wingMat = new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.4 });
             const wings = new THREE.Mesh(wingGeo, wingMat);
-            wings.position.set(0, 0, 0.5);
+            wings.position.set(0, 0, 0.3);
             wings.name = "wings";
             group.add(wings);
 
-            // Tail Fin
-            const tailGeo = new THREE.BoxGeometry(0.18, 2.0, 1.3);
+            const tailGeo = new THREE.BoxGeometry(0.15, 1.4, 0.9);
             const tailMat = new THREE.MeshStandardMaterial({ color: primaryColor });
             const tail = new THREE.Mesh(tailGeo, tailMat);
-            tail.position.set(0, 1.1, -3.5);
+            tail.position.set(0, 0.8, -2.5);
             tail.name = "tail";
             group.add(tail);
 
-            // Enemy insignia / stripe
             if (isEnemy) {
-                const stripeGeo = new THREE.BoxGeometry(14.2, 0.22, 0.5);
+                const stripeGeo = new THREE.BoxGeometry(8.6, 0.18, 0.35);
                 const stripeMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
                 const stripe = new THREE.Mesh(stripeGeo, stripeMat);
-                stripe.position.set(0, 0.02, 0.5);
+                stripe.position.set(0, 0.02, 0.3);
                 group.add(stripe);
             }
 
-            // Propeller
-            const propGeo = new THREE.BoxGeometry(2.6, 0.22, 0.06);
+            const propGeo = new THREE.BoxGeometry(1.8, 0.18, 0.05);
             const propMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
             const prop = new THREE.Mesh(propGeo, propMat);
-            prop.position.set(0, 0, isEnemy ? -5.05 : 4.3);
+            prop.position.set(0, 0, isEnemy ? -3.4 : 4.3);
             prop.name = "propeller";
             group.add(prop);
 
@@ -654,22 +735,20 @@
             enemyPlanes.forEach(e => scene.remove(e));
             enemyPlanes = [];
 
-            // Clean existing 3D overlays
             const overlay = document.getElementById('target-labels-overlay');
             if (overlay) overlay.innerHTML = '';
             labelElements = [];
 
-            // Spawn 4 Enemy Warplanes visible in formation
+            // Compact horizontal spacing (8.5 instead of 15) so all 4 targets stay visible on mobile screens
             for (let i = 0; i < 4; i++) {
                 const enemy = createWW2PlaneMesh(0xd97706, true);
-                enemy.rotation.y = Math.PI; // Face towards players
-                const startPos = new THREE.Vector3((i - 1.5) * 15, 3 + (i % 2) * 2.5, -35);
+                enemy.rotation.y = Math.PI;
+                const startPos = new THREE.Vector3((i - 1.5) * 8.5, 3 + (i % 2) * 1.8, -32);
                 enemy.position.copy(startPos);
                 enemy.userData.initialPos.copy(startPos);
                 scene.add(enemy);
                 enemyPlanes.push(enemy);
 
-                // Create DOM Label badge element attached to 3D space
                 const label = document.createElement('div');
                 label.className = 'target-3d-badge';
                 label.id = `enemy-label-${i}`;
@@ -692,22 +771,18 @@
                     return;
                 }
 
-                // Update answer text onto 3D aircraft label
                 if (currentProblem.options[idx] !== undefined) {
                     label.innerHTML = `<span class="text-[10px] text-slate-300 mr-1">T${idx+1}:</span>${currentProblem.options[idx]}`;
                     enemy.userData.answerValue = currentProblem.options[idx];
                 }
 
-                // Project 3D vector to screen coordinates
                 enemy.getWorldPosition(tempVec);
-                tempVec.y += 3.5; // Offset above target aircraft
+                tempVec.y += 2.4;
                 tempVec.project(camera);
 
-                // Convert to percentage/pixel screen space
                 const x = (tempVec.x * 0.5 + 0.5) * window.innerWidth;
                 const y = (-(tempVec.y * 0.5) + 0.5) * window.innerHeight;
 
-                // Position the label element
                 label.style.left = `${x}px`;
                 label.style.top = `${y}px`;
                 label.style.opacity = (tempVec.z < 1) ? '1' : '0';
@@ -740,7 +815,6 @@
             }
         }
 
-        // Animated Plane Destruction & Debris Explosion Physics
         function triggerPlaneAttackAnimation(playerIdx, targetIdx) {
             playGunfireSound();
             setTimeout(playExplosionSound, 320);
@@ -750,7 +824,6 @@
 
             if (!attacker || !target) return;
 
-            // Attacker strafing attack maneuver
             attacker.position.z -= 7;
             attacker.rotation.x = 0.2;
             setTimeout(() => {
@@ -758,7 +831,6 @@
                 attacker.rotation.x = 0;
             }, 500);
 
-            // Explosive Hit & Plane Destruction Sequence
             setTimeout(() => {
                 if (target.userData.isDestroyed) return;
                 target.userData.isDestroyed = true;
@@ -766,10 +838,8 @@
                 createParticleExplosion(target.position);
                 spawnPlaneDebris(target);
 
-                // Hide original intact target plane during explosion
                 target.visible = false;
 
-                // Respawn target plane after destruction sequence
                 setTimeout(() => {
                     target.position.copy(target.userData.initialPos);
                     target.rotation.set(0, Math.PI, 0);
@@ -780,7 +850,6 @@
             }, 320);
         }
 
-        // Break airplane into flying debris pieces (wings, tail, fuselage)
         function spawnPlaneDebris(targetGroup) {
             const pos = targetGroup.position;
             const debrisMaterials = [
@@ -789,12 +858,11 @@
                 new THREE.MeshBasicMaterial({ color: 0x111111 })
             ];
 
-            // Create broken physical parts
             const parts = [
-                { geo: new THREE.BoxGeometry(6, 0.2, 2), name: "Left Wing" },
-                { geo: new THREE.BoxGeometry(6, 0.2, 2), name: "Right Wing" },
-                { geo: new THREE.ConeGeometry(1.5, 5, 6), name: "Broken Fuselage" },
-                { geo: new THREE.BoxGeometry(0.2, 1.8, 1.2), name: "Tail Fin" }
+                { geo: new THREE.BoxGeometry(6, 0.2, 2) },
+                { geo: new THREE.BoxGeometry(6, 0.2, 2) },
+                { geo: new THREE.ConeGeometry(1.5, 5, 6) },
+                { geo: new THREE.BoxGeometry(0.2, 1.8, 1.2) }
             ];
 
             parts.forEach((p, idx) => {
@@ -824,7 +892,6 @@
             });
         }
 
-        // Fire & Smoke Burst Particle System
         function createParticleExplosion(pos) {
             const particleCount = 75;
             const pGeo = new THREE.BufferGeometry();
@@ -860,7 +927,6 @@
             const time = Date.now() * 0.001;
             const delta = 0.016;
 
-            // Player Planes movement & propeller spin
             playerPlanes.forEach((plane, idx) => {
                 const prop = plane.getObjectByName("propeller");
                 if (prop) prop.rotation.z += 0.6;
@@ -868,7 +934,6 @@
                 plane.rotation.z = Math.sin(time + idx) * 0.06;
             });
 
-            // Enemy Planes hover & animation
             enemyPlanes.forEach((enemy, idx) => {
                 if (!enemy.userData.isDestroyed && enemy.visible) {
                     const prop = enemy.getObjectByName("propeller");
@@ -878,16 +943,14 @@
                 }
             });
 
-            // Update 3D Answer Overlay Labels to follow enemy planes in screen space
             update3DAnswerLabels();
 
-            // Update Flying Debris physics (Falling & Spinning Plane Parts)
             for (let i = activeDebris.length - 1; i >= 0; i--) {
                 const piece = activeDebris[i];
                 piece.userData.life -= delta;
 
                 piece.position.addScaledVector(piece.userData.velocity, delta);
-                piece.userData.velocity.y -= 25 * delta; // Gravity pull
+                piece.userData.velocity.y -= 25 * delta;
 
                 piece.rotation.x += piece.userData.rotSpeed.x;
                 piece.rotation.y += piece.userData.rotSpeed.y;
@@ -899,7 +962,6 @@
                 }
             }
 
-            // Update Explosion Fire Particles
             for (let i = activeFireParticles.length - 1; i >= 0; i--) {
                 const sys = activeFireParticles[i];
                 sys.userData.life -= delta * 1.5;
@@ -924,7 +986,6 @@
                 }
             }
 
-            // Dynamic sky cloud scrolling
             clouds.forEach(cloud => {
                 cloud.position.z += 0.9;
                 if (cloud.position.z > 100) cloud.position.z = -450;
@@ -938,6 +999,7 @@
     <script>
         let selectedOp = 'add';
         let selectedDiff = 'easy';
+        let activePlayerCount = 3;
         let currentQuestionIndex = 0;
         let timerInterval = null;
         let timeLeft = 15;
@@ -954,12 +1016,30 @@
         let players = [
             { id: 1, name: 'Pilot Alpha', score: 0, answered: false },
             { id: 2, name: 'Pilot Bravo', score: 0, answered: false },
-            { id: 3, name: 'Pilot Charlie', score: 0, answered: false }
+            { id: 3, name: 'Pilot Charlie', score: 0, answered: false },
+            { id: 4, name: 'Pilot Delta', score: 0, answered: false }
         ];
 
         window.onload = function() {
             init3DScene();
         };
+
+        function selectPlayerCount(count) {
+            activePlayerCount = count;
+            document.querySelectorAll('.player-count-btn').forEach(btn => {
+                btn.className = "player-count-btn px-3 py-1 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold font-orbitron text-[10px] sm:text-xs transition";
+            });
+            const activeBtn = document.getElementById(`cnt-btn-${count}`);
+            if (activeBtn) {
+                activeBtn.className = "player-count-btn px-3 py-1 rounded-lg bg-amber-950/60 border border-amber-500 text-amber-300 font-bold font-orbitron text-[10px] sm:text-xs transition";
+            }
+            const label = document.getElementById('btn-player-label');
+            if (label) label.innerText = count === 1 ? 'SOLO 1 PILOT' : `${count} PILOT`;
+
+            if (typeof playerPlanes !== 'undefined' && playerPlanes.length >= 4) {
+                updatePlayerPlanesPositions();
+            }
+        }
 
         function selectOperation(op) {
             selectedOp = op;
@@ -986,6 +1066,32 @@
             initAudio();
             currentQuestionIndex = 0;
             players.forEach(p => { p.score = 0; p.answered = false; });
+            
+            const container = document.getElementById('pilots-hud-container');
+            if (container) {
+                if (activePlayerCount === 1) {
+                    container.className = "grid grid-cols-1 max-w-sm mx-auto w-full pointer-events-auto shrink-0 pb-1 max-h-[50dvh] overflow-y-auto";
+                } else if (activePlayerCount === 2) {
+                    container.className = "grid grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto w-full gap-1 sm:gap-2 pointer-events-auto shrink-0 pb-1 max-h-[50dvh] overflow-y-auto";
+                } else if (activePlayerCount === 3) {
+                    container.className = "grid grid-cols-1 md:grid-cols-3 w-full gap-1 sm:gap-2 pointer-events-auto shrink-0 pb-1 max-h-[50dvh] overflow-y-auto";
+                } else {
+                    container.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 w-full gap-1 sm:gap-2 pointer-events-auto shrink-0 pb-1 max-h-[50dvh] overflow-y-auto";
+                }
+            }
+
+            for (let i = 1; i <= 4; i++) {
+                const pPanel = document.getElementById(`panel-p${i}`);
+                if (pPanel) {
+                    if (i <= activePlayerCount) {
+                        pPanel.classList.remove('hidden');
+                    } else {
+                        pPanel.classList.add('hidden');
+                    }
+                }
+            }
+
+            updatePlayerPlanesPositions();
             updateScoreUI();
 
             document.getElementById('screen-main-menu').classList.add('hidden');
@@ -1045,11 +1151,12 @@
         }
 
         function renderPlayerOptions() {
-            const pContainers = ['p1-options', 'p2-options', 'p3-options'];
+            const pContainers = ['p1-options', 'p2-options', 'p3-options', 'p4-options'];
 
-            pContainers.forEach((containerId, playerIdx) => {
+            for (let playerIdx = 0; playerIdx < activePlayerCount; playerIdx++) {
+                const containerId = pContainers[playerIdx];
                 const container = document.getElementById(containerId);
-                if (!container) return;
+                if (!container) continue;
                 container.innerHTML = '';
 
                 currentProblem.options.forEach((optValue, optIdx) => {
@@ -1065,7 +1172,7 @@
 
                     container.appendChild(btn);
                 });
-            });
+            }
         }
 
         function loadNextMathQuestion() {
@@ -1141,9 +1248,10 @@
         }
 
         function updateScoreUI() {
-            document.getElementById('p1-score').innerText = `${players[0].score} PTS`;
-            document.getElementById('p2-score').innerText = `${players[1].score} PTS`;
-            document.getElementById('p3-score').innerText = `${players[2].score} PTS`;
+            for (let i = 0; i < activePlayerCount; i++) {
+                const scoreElem = document.getElementById(`p${i+1}-score`);
+                if (scoreElem) scoreElem.innerText = `${players[i].score} PTS`;
+            }
         }
 
         function endGameSession() {
@@ -1151,12 +1259,13 @@
             document.getElementById('screen-game-hud').classList.add('hidden');
             document.getElementById('screen-game-over').classList.remove('hidden');
 
-            const sorted = [...players].sort((a, b) => b.score - a.score);
+            const activePlayers = players.slice(0, activePlayerCount);
+            const sorted = [...activePlayers].sort((a, b) => b.score - a.score);
             const leaderboardContainer = document.getElementById('leaderboard-list');
             leaderboardContainer.innerHTML = '';
 
-            const rankBadges = ['🥇 ROOKIE ACE', '🥈 WINGMAN', '🥉 CADET'];
-            const colors = ['text-amber-400', 'text-slate-300', 'text-amber-600'];
+            const rankBadges = ['🥇 ROOKIE ACE', '🥈 WINGMAN', '🥉 CADET', '🎖️ PILOT'];
+            const colors = ['text-amber-400', 'text-slate-300', 'text-amber-600', 'text-purple-400'];
 
             sorted.forEach((p, idx) => {
                 const row = document.createElement('div');
@@ -1180,6 +1289,7 @@
             clearInterval(timerInterval);
             document.getElementById('screen-game-hud').classList.add('hidden');
             document.getElementById('screen-game-over').classList.add('hidden');
+            document.getElementById('screen-remote-controller').classList.add('hidden');
             document.getElementById('screen-main-menu').classList.remove('hidden');
         }
 
@@ -1201,27 +1311,79 @@
             document.getElementById('radio-message').innerText = 'Pengaturan guru berhasil diperbarui!';
         }
 
-        let peer = null;
+        /* -------------------------------------------------------------
+           PERBAIKAN ENGINE MULTI-HP PEERJS (RUANG & CONTROLLER HP)
+        ------------------------------------------------------------- */
+        let hostPeer = null;
+        let clientPeer = null;
+        let activeClientConn = null;
+        let remotePlayerIdx = 0;
+
+        function generateCustomRoomID() {
+            const num = Math.floor(100 + Math.random() * 900);
+            return `AIR-${num}`;
+        }
+
+        function updatePeerStatus(msg, isSuccess = false) {
+            const badge = document.getElementById('peer-status-badge');
+            if (badge) {
+                badge.innerText = msg;
+                badge.className = isSuccess 
+                    ? "mt-1 text-[10px] text-emerald-400 font-semibold" 
+                    : "mt-1 text-[10px] text-amber-400 font-semibold animate-pulse";
+            }
+        }
+
+        function initHostPeer() {
+            const peerDisplay = document.getElementById('peer-room-id');
+            if (peerDisplay) peerDisplay.innerText = "CONNECTING...";
+            updatePeerStatus("Mendaftarkan ID Ruang ke Server...");
+
+            if (hostPeer) {
+                try { hostPeer.destroy(); } catch(e) {}
+            }
+
+            const customId = generateCustomRoomID();
+
+            try {
+                hostPeer = new Peer(customId);
+
+                hostPeer.on('open', (id) => {
+                    if (peerDisplay) peerDisplay.innerText = id;
+                    updatePeerStatus("✔️ SIAP! HP Siswa dapat memasukkan ID ini.", true);
+                });
+
+                hostPeer.on('connection', (conn) => {
+                    updatePeerStatus("📱 Perangkat HP Siswa Terhubung!", true);
+
+                    conn.on('data', (data) => {
+                        if (data && data.type === 'ANSWER') {
+                            const val = currentProblem.options[data.optIdx];
+                            handlePlayerAnswer(data.playerIdx, val, data.optIdx, null);
+                        }
+                    });
+                });
+
+                hostPeer.on('error', (err) => {
+                    console.warn("Peer Host Error, retrying auto ID:", err);
+                    // Fallback to auto-assigned ID if custom ID collides
+                    hostPeer = new Peer();
+                    hostPeer.on('open', (id) => {
+                        const shortId = id.substring(0, 6).toUpperCase();
+                        if (peerDisplay) peerDisplay.innerText = shortId;
+                        updatePeerStatus("✔️ SIAP! Masukkan kode ini.", true);
+                    });
+                });
+            } catch (e) {
+                updatePeerStatus("Gagal membuat ID. Coba lagi.");
+            }
+        }
 
         function openMultiDeviceModal() {
             document.getElementById('modal-multidevice').classList.remove('hidden');
-            if (!peer && typeof Peer !== 'undefined') {
-                try {
-                    peer = new Peer();
-                    peer.on('open', (id) => {
-                        const peerDisplay = document.getElementById('peer-room-id');
-                        if (peerDisplay) peerDisplay.innerText = id.substring(0, 6).toUpperCase();
-                    });
-                    peer.on('connection', (conn) => {
-                        conn.on('data', (data) => {
-                            if (data.type === 'ANSWER') {
-                                handlePlayerAnswer(data.playerIdx, data.value, data.optIdx, null);
-                            }
-                        });
-                    });
-                } catch (err) {
-                    console.warn("PeerJS connection initialization issue:", err);
-                }
+            const peerDisplay = document.getElementById('peer-room-id');
+            if (!hostPeer || hostPeer.destroyed || (peerDisplay && (peerDisplay.innerText === "MENGHUBUNGKAN..." || peerDisplay.innerText === "CONNECTING..."))) {
+                initHostPeer();
             }
         }
 
@@ -1229,12 +1391,76 @@
             document.getElementById('modal-multidevice').classList.add('hidden');
         }
 
-        function joinPeerSession() {
-            const joinId = document.getElementById('input-join-id').value.trim();
-            if (!joinId) return;
-            const radioMsg = document.getElementById('radio-message');
-            if (radioMsg) radioMsg.innerText = `Menghubungkan ke Perangkat Sesi ${joinId}... Sukses!`;
-            closeMultiDeviceModal();
+        function copyRoomID() {
+            const peerDisplay = document.getElementById('peer-room-id');
+            if (!peerDisplay || peerDisplay.innerText.includes("...")) return;
+            
+            const textToCopy = peerDisplay.innerText;
+            navigator.clipboard ? navigator.clipboard.writeText(textToCopy) : document.execCommand('copy');
+            alert(`ID Ruang (${textToCopy}) berhasil disalin!`);
+        }
+
+        function joinAsController() {
+            const roomInput = document.getElementById('input-join-id').value.trim().toUpperCase();
+            if (!roomInput) {
+                alert("Silakan masukkan ID Ruang terlebih dahulu!");
+                return;
+            }
+
+            updatePeerStatus(`Menghubungkan ke Ruang ${roomInput}...`);
+
+            if (clientPeer) {
+                try { clientPeer.destroy(); } catch(e) {}
+            }
+
+            clientPeer = new Peer();
+
+            clientPeer.on('open', () => {
+                const conn = clientPeer.connect(roomInput);
+                
+                conn.on('open', () => {
+                    activeClientConn = conn;
+                    closeMultiDeviceModal();
+                    document.getElementById('screen-main-menu').classList.add('hidden');
+                    document.getElementById('screen-remote-controller').classList.remove('hidden');
+                });
+
+                conn.on('error', (err) => {
+                    alert("Gagal terhubung ke Ruang. Pastikan ID Ruang benar!");
+                    updatePeerStatus("Gagal terhubung.");
+                });
+            });
+
+            clientPeer.on('error', (err) => {
+                alert("Error Koneksi WebRTC. Coba lagi.");
+            });
+        }
+
+        function setRemotePlayerIndex(idx) {
+            remotePlayerIdx = idx;
+            const names = ['P1 Alpha', 'P2 Bravo', 'P3 Charlie', 'P4 Delta'];
+            document.getElementById('remote-pilot-name').innerText = names[idx];
+
+            for (let i = 0; i < 4; i++) {
+                const btn = document.getElementById(`pilot-select-${i}`);
+                if (btn) {
+                    btn.className = (i === idx) 
+                        ? "py-1.5 rounded-lg bg-amber-600 border border-amber-400 text-white font-bold font-orbitron text-xs"
+                        : "py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold font-orbitron text-xs";
+                }
+            }
+        }
+
+        function sendRemoteAnswer(optIdx) {
+            if (activeClientConn && activeClientConn.open) {
+                activeClientConn.send({
+                    type: 'ANSWER',
+                    playerIdx: remotePlayerIdx,
+                    optIdx: optIdx
+                });
+            } else {
+                alert("Koneksi ke Layar Utama terputus!");
+            }
         }
     </script>
 </body>
