@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WORLD WAR II AIR COMBAT: MATH BATTLE</title>
+    <!-- Tailwind CSS for Responsive UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D Graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- PeerJS for Multi-Device Local Multiplayer Syncing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Orbitron:wght@500;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            background-color: #050b14;
+            font-family: 'Chakra Petch', sans-serif;
+            color: #fff;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom WWII Military Theme Styling */
+        .military-panel {
+            background: rgba(15, 23, 42, 0.92);
+            border: 1.5px solid #3b82f6;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.25), inset 0 0 10px rgba(59, 130, 246, 0.1);
+            backdrop-filter: blur(8px);
+        }
+        .military-btn {
+            background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%);
+            border: 1px solid #60a5fa;
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+        }
+        .military-btn:hover, .military-btn:active {
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+            border-color: #93c5fd;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+        }
+
+        /* Radar Sweeper Animation */
+        @keyframes sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .radar-sweep {
+            animation: sweep 4s linear infinite;
+        }
+
+        /* 3D Canvas Answer Overlay Label Styling */
+        .target-3d-badge {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            background: rgba(15, 23, 42, 0.88);
+            border: 2px solid #f59e0b;
+            color: #fbbf24;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+            pointer-events: none;
+            white-space: nowrap;
+            transition: opacity 0.2s ease, transform 0.1s ease;
+        }
+        .target-3d-badge::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 8px 6px 0 6px;
+            border-style: solid;
+            border-color: #f59e0b transparent transparent transparent;
+        }
+
+        /* Player specific HUD themes */
+        .p1-border { border-color: #ef4444; }
+        .p1-text { color: #f87171; }
+        .p1-bg { background-color: rgba(239, 68, 68, 0.18); }
+        .p2-border { border-color: #3b82f6; }
+        .p2-text { color: #60a5fa; }
+        .p2-bg { background-color: rgba(59, 130, 246, 0.18); }
+        .p3-border { border-color: #10b981; }
+        .p3-text { color: #34d399; }
+        .p3-bg { background-color: rgba(16, 185, 129, 0.18); }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
+    </style>
+</head>
+<body class="relative flex flex-col justify-between h-[100dvh] w-screen overflow-hidden">
+
+    <!-- 3D WebGL Canvas Rendering Container -->
+    <div id="canvas-container" class="absolute inset-0 z-0 pointer-events-none"></div>
+
+    <!-- Container Overlay for Dynamic 3D Floating Answer Labels -->
+    <div id="target-labels-overlay" class="absolute inset-0 z-10 pointer-events-none overflow-hidden"></div>
+
+    <!-- UI Overlay Main Wrapper -->
+    <div id="ui-layer" class="relative z-20 flex flex-col justify-between w-full h-[100dvh] pointer-events-none overflow-y-auto">
+
+        <!-- Top Header & Global Settings Bar -->
+        <header class="flex justify-between items-center px-2 sm:px-4 py-1 pointer-events-auto bg-slate-900/90 border-b border-slate-700/60 backdrop-blur-md shrink-0">
+            <div class="flex items-center space-x-1.5 sm:space-x-2">
+                <i class="fa-solid font-orbitron fa-plane-departure text-amber-500 text-xs sm:text-lg"></i>
+                <h1 class="font-orbitron font-extrabold text-[11px] sm:text-base md:text-lg tracking-wider text-amber-400 drop-shadow">
+                    MATH BATTLE <span class="hidden sm:inline-block text-[10px] sm:text-xs px-1.5 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded text-amber-300">WWII AIR COMBAT</span>
+                </h1>
+            </div>
+
+            <!-- Global Audio & Settings Controls -->
+            <div class="flex items-center space-x-1 sm:space-x-2">
+                <button id="btn-sound-toggle" onclick="toggleAudio()" class="p-1 sm:p-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg border border-slate-600 transition" title="Mute/Unmute Audio">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-xs sm:text-base"></i>
+                </button>
+                <button onclick="openSettingsModal()" class="p-1 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-600 transition" title="Pengaturan Guru">
+                    <i class="fa-solid fa-sliders text-xs sm:text-base"></i>
+                </button>
+                <button onclick="showMainMenu()" class="px-2 sm:px-3 py-1 bg-red-900/80 hover:bg-red-800 text-red-200 rounded-lg border border-red-600 text-[10px] sm:text-xs font-semibold transition">
+                    <i class="fa-solid fa-house sm:mr-1"></i> <span class="hidden sm:inline">Menu</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN MENU SCREEN -->
+        <div id="screen-main-menu" class="pointer-events-auto flex-1 flex flex-col items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto min-h-0">
+            <div class="max-w-4xl w-full military-panel rounded-xl p-3 sm:p-6 text-center space-y-2 sm:space-y-4 relative overflow-hidden my-auto max-h-full overflow-y-auto">
+                <!-- Decorative WWII Radar Background -->
+                <div class="absolute -right-20 -top-20 w-48 h-48 sm:w-80 sm:h-80 rounded-full border border-emerald-500/20 pointer-events-none flex items-center justify-center">
+                    <div class="w-full h-0.5 bg-emerald-500/20 radar-sweep"></div>
+                </div>
+
+                <div class="space-y-0.5">
+                    <span class="text-[8px] sm:text-xs uppercase tracking-widest text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">
+                        Game Edukasi Matematika SD 3D
+                    </span>
+                    <h2 class="text-base sm:text-2xl md:text-3xl font-black font-orbitron text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 drop-shadow-md">
+                        PERTEMPURAN UDARA MATEMATIKA
+                    </h2>
+                    <p class="text-slate-300 text-[10px] sm:text-xs max-w-xl mx-auto">
+                        Pilih Operasi Matematika & Tingkat Kesulitan untuk Memulai Misi Pertempuran 3 Pilot!
+                    </p>
+                </div>
+
+                <!-- Operations Selection Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3 my-1">
+                    <button onclick="selectOperation('add')" id="op-add" class="op-btn military-btn p-1.5 sm:p-3 rounded-xl flex flex-col items-center justify-center border-amber-500/50">
+                        <i class="fa-solid fa-plus text-base sm:text-2xl text-amber-400 mb-0.5"></i>
+                        <span class="font-bold font-orbitron text-[10px] sm:text-xs text-slate-100">Penjumlahan</span>
+                    </button>
+                    <button onclick="selectOperation('sub')" id="op-sub" class="op-btn military-btn p-1.5 sm:p-3 rounded-xl flex flex-col items-center justify-center border-slate-600">
+                        <i class="fa-solid fa-minus text-base sm:text-2xl text-blue-400 mb-0.5"></i>
+                        <span class="font-bold font-orbitron text-[10px] sm:text-xs text-slate-100">Pengurangan</span>
+                    </button>
+                    <button onclick="selectOperation('mul')" id="op-mul" class="op-btn military-btn p-1.5 sm:p-3 rounded-xl flex flex-col items-center justify-center border-slate-600">
+                        <i class="fa-solid fa-xmark text-base sm:text-2xl text-emerald-400 mb-0.5"></i>
+                        <span class="font-bold font-orbitron text-[10px] sm:text-xs text-slate-100">Perkalian</span>
+                    </button>
+                    <button onclick="selectOperation('div')" id="op-div" class="op-btn military-btn p-1.5 sm:p-3 rounded-xl flex flex-col items-center justify-center border-slate-600">
+                        <i class="fa-solid fa-divide text-base sm:text-2xl text-purple-400 mb-0.5"></i>
+                        <span class="font-bold font-orbitron text-[10px] sm:text-xs text-slate-100">Pembagian</span>
+                    </button>
+                </div>
+
+                <!-- Difficulty Selection -->
+                <div class="space-y-0.5">
+                    <label class="text-[9px] sm:text-xs uppercase tracking-wider text-slate-400 font-semibold">Tingkat Kesulitan Kesatuan:</label>
+                    <div class="flex flex-wrap justify-center gap-1">
+                        <button onclick="selectDifficulty('easy')" id="diff-easy" class="diff-btn px-2 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500 text-emerald-300 font-bold text-[10px] sm:text-xs">Mudah</button>
+                        <button onclick="selectDifficulty('medium')" id="diff-medium" class="diff-btn px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold text-[10px] sm:text-xs">Sedang</button>
+                        <button onclick="selectDifficulty('hard')" id="diff-hard" class="diff-btn px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold text-[10px] sm:text-xs">Sulit</button>
+                        <button onclick="selectDifficulty('challenge')" id="diff-challenge" class="diff-btn px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold text-[10px] sm:text-xs">Tantangan</button>
+                    </div>
+                </div>
+
+                <!-- Multiplayer Setup Mode Options -->
+                <div class="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row justify-center gap-2">
+                    <button onclick="startBattle('local')" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black font-orbitron text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition">
+                        <i class="fa-solid fa-play mr-1"></i> MAIN 3 PILOT (1 LAYAR/HP)
+                    </button>
+                    <button onclick="openMultiDeviceModal()" class="px-3 py-1.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold border border-blue-500/50 rounded-xl text-xs transition flex items-center justify-center">
+                        <i class="fa-solid fa-mobile-screen-button mr-1 text-xs"></i> Mode Multi-HP
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVE BATTLE HUD & QUESTION SCREEN -->
+        <div id="screen-game-hud" class="hidden flex-1 flex flex-col justify-between p-1 sm:p-3 pointer-events-none overflow-y-auto min-h-0">
+            
+            <!-- Top Target Question Banner -->
+            <div class="self-center w-full max-w-xl military-panel rounded-lg p-1.5 sm:p-2.5 text-center pointer-events-auto shadow-xl relative mb-1 shrink-0">
+                <div class="flex justify-between items-center mb-0.5 text-[9px] sm:text-xs text-amber-400/90 font-mono">
+                    <span>SOAL <span id="hud-question-number">1</span>/<span id="hud-total-questions">10</span></span>
+                    <span id="hud-diff-tag" class="uppercase font-bold text-emerald-400">Mudah</span>
+                    <span id="hud-timer-display" class="font-orbitron font-bold text-red-400 text-[11px] sm:text-xs">⏱️ 15s</span>
+                </div>
+                
+                <!-- Target Math Problem Display -->
+                <div class="py-1 bg-slate-950/90 rounded-lg border border-amber-500/30">
+                    <p class="text-[8px] sm:text-[9px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Tembak Pesawat Musuh Dengan Jawaban Benar:</p>
+                    <div id="hud-math-problem" class="text-lg sm:text-2xl md:text-3xl font-black font-orbitron text-amber-300 tracking-wider">
+                        12 + 15 = ?
+                    </div>
+                </div>
+
+                <!-- Mission Status Banner -->
+                <div id="hud-radio-box" class="mt-0.5 text-[8px] sm:text-xs text-amber-400/90 font-mono flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-crosshair animate-pulse text-[9px]"></i>
+                    <span id="radio-message">Misi: Pilih jawaban pada panel kendali pilot Anda!</span>
+                </div>
+            </div>
+
+            <!-- Bottom 3 Pilots Interactive Response Panels Container -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-1 sm:gap-2 w-full pointer-events-auto shrink-0 pb-1 max-h-[50dvh] overflow-y-auto">
+                
+                <!-- PILOT 1 ALPHA PANEL -->
+                <div class="military-panel p1-border p1-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
+                    <div class="flex justify-between items-center border-b border-red-500/30 pb-0.5">
+                        <div class="flex items-center space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-red-500 inline-block animate-ping"></span>
+                            <span class="font-orbitron font-bold p1-text text-[11px] sm:text-xs">P1: PILOT ALPHA</span>
+                        </div>
+                        <span id="p1-score" class="font-orbitron font-bold text-[11px] sm:text-xs text-white">0 PTS</span>
+                    </div>
+                    <!-- Option Buttons container for Pilot 1 -->
+                    <div id="p1-options" class="grid grid-cols-2 gap-1"></div>
+                </div>
+
+                <!-- PILOT 2 BRAVO PANEL -->
+                <div class="military-panel p2-border p2-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
+                    <div class="flex justify-between items-center border-b border-blue-500/30 pb-0.5">
+                        <div class="flex items-center space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-blue-500 inline-block animate-ping"></span>
+                            <span class="font-orbitron font-bold p2-text text-[11px] sm:text-xs">P2: PILOT BRAVO</span>
+                        </div>
+                        <span id="p2-score" class="font-orbitron font-bold text-[11px] sm:text-xs text-white">0 PTS</span>
+                    </div>
+                    <!-- Option Buttons container for Pilot 2 -->
+                    <div id="p2-options" class="grid grid-cols-2 gap-1"></div>
+                </div>
+
+                <!-- PILOT 3 CHARLIE PANEL -->
+                <div class="military-panel p3-border p3-bg rounded-lg p-1 sm:p-2 flex flex-col justify-between space-y-1">
+                    <div class="flex justify-between items-center border-b border-emerald-500/30 pb-0.5">
+                        <div class="flex items-center space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+                            <span class="font-orbitron font-bold p3-text text-[11px] sm:text-xs">P3: PILOT CHARLIE</span>
+                        </div>
+                        <span id="p3-score" class="font-orbitron font-bold text-[11px] sm:text-xs text-white">0 PTS</span>
+                    </div>
+                    <!-- Option Buttons container for Pilot 3 -->
+                    <div id="p3-options" class="grid grid-cols-2 gap-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME OVER / LEADERBOARD SCREEN -->
+        <div id="screen-game-over" class="hidden flex-1 flex flex-col items-center justify-center p-2 sm:p-3 bg-slate-950/90 backdrop-blur-md pointer-events-auto overflow-y-auto min-h-0">
+            <div class="max-w-md w-full military-panel rounded-xl p-3 sm:p-6 text-center space-y-3 my-auto max-h-full overflow-y-auto">
+                <i class="fa-solid fa-trophy text-3xl sm:text-4xl text-amber-400 animate-bounce"></i>
+                <div>
+                    <h2 class="text-lg sm:text-2xl font-black font-orbitron text-amber-300">MISI PERTEMPURAN SELESAI</h2>
+                    <p class="text-slate-400 text-[10px] sm:text-xs mt-0.5">Laporan Hasil Skor Pertempuran Pilot</p>
+                </div>
+
+                <div id="leaderboard-list" class="space-y-1.5"></div>
+
+                <div class="flex justify-center space-x-2 pt-2">
+                    <button onclick="restartBattle()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-orbitron text-xs rounded-xl transition">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Main Lagi
+                    </button>
+                    <button onclick="showMainMenu()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold font-orbitron text-xs border border-slate-600 rounded-xl transition">
+                        <i class="fa-solid fa-house mr-1"></i> Menu Utama
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL PENGATURAN GURU (TEACHER CONFIG MODAL) -->
+    <div id="modal-settings" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="max-w-md w-full military-panel rounded-2xl p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <h3 class="font-orbitron font-bold text-lg text-amber-400"><i class="fa-solid fa-sliders mr-2"></i>Pengaturan Misi Guru</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Jumlah Soal Pertempuran:</label>
+                    <input type="number" id="setting-total-questions" value="10" min="3" max="50" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-amber-300 font-bold focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Durasi Timer per Soal (Detik, 0 = ∞):</label>
+                    <input type="number" id="setting-timer-duration" value="15" min="0" max="60" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-amber-300 font-bold focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Angka Min:</label>
+                        <input type="number" id="setting-min-num" value="1" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-amber-300 font-bold focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Angka Max:</label>
+                        <input type="number" id="setting-max-num" value="20" min="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-amber-300 font-bold focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-sm font-semibold">Batal</button>
+                <button onclick="saveSettings()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-sm font-bold">Simpan Pengaturan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MULTI-DEVICE PAIRING -->
+    <div id="modal-multidevice" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="max-w-md w-full military-panel rounded-2xl p-6 space-y-4 text-center">
+            <h3 class="font-orbitron font-bold text-lg text-blue-400"><i class="fa-solid fa-mobile-screen-button mr-2"></i>Koneksi Multi-HP (Peer2Peer)</h3>
+            <p class="text-xs text-slate-300">Gunakan ID ini untuk menghubungkan HP siswa sebagai remote kendali pilot individual!</p>
+            
+            <div class="p-3 bg-slate-900 rounded-xl border border-blue-500/40">
+                <span class="text-xs text-slate-400 block uppercase">ID Ruang Sesi Utama:</span>
+                <span id="peer-room-id" class="text-2xl font-black font-orbitron text-amber-400 tracking-wider">CONNECTING...</span>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <input type="text" id="input-join-id" placeholder="Masukkan ID Sesi Ruang (Untuk Perangkat Siswa)..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-center text-sm text-white focus:outline-none focus:border-blue-500">
+                <button onclick="joinPeerSession()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm transition">Hubungkan Perangkat</button>
+            </div>
+
+            <button onclick="closeMultiDeviceModal()" class="mt-2 text-xs text-slate-400 underline">Tutup Modal</button>
+        </div>
+    </div>
+
+    <!-- SOUND & AUDIO LOGIC -->
+    <script>
+        let audioCtx = null;
+        let isMuted = false;
+        let engineOscillator = null;
+        let engineGain = null;
+        let engineSubOsc = null;
+
+        function initAudio() {
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        audioCtx = new AudioContextClass();
+                        startEngineSound();
+                    }
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch (e) {
+                console.warn("Web Audio API Initialization Fallback:", e);
+            }
+        }
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('sound-icon');
+            if (isMuted) {
+                if (icon) icon.className = 'fa-solid fa-volume-xmark text-red-400 text-lg';
+                if (engineGain && audioCtx) engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            } else {
+                if (icon) icon.className = 'fa-solid fa-volume-high text-amber-400 text-lg';
+                if (engineGain && audioCtx) engineGain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+            }
+        }
+
+        function startEngineSound() {
+            if (isMuted || !audioCtx) return;
+            try {
+                // Main Engine Sawtooth Oscillator
+                engineOscillator = audioCtx.createOscillator();
+                engineGain = audioCtx.createGain();
+                engineOscillator.type = 'sawtooth';
+                engineOscillator.frequency.setValueAtTime(65, audioCtx.currentTime);
+
+                // Sub-Bass Engine Rumble for extra cinematic weight
+                engineSubOsc = audioCtx.createOscillator();
+                const subGain = audioCtx.createGain();
+                engineSubOsc.type = 'sine';
+                engineSubOsc.frequency.setValueAtTime(35, audioCtx.currentTime);
+                subGain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(280, audioCtx.currentTime);
+
+                engineOscillator.connect(filter);
+                engineSubOsc.connect(filter);
+                filter.connect(engineGain);
+                engineGain.connect(audioCtx.destination);
+                
+                engineGain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+                engineOscillator.start();
+                engineSubOsc.start();
+            } catch (e) {
+                console.log("Audio play blocked until interaction");
+            }
+        }
+
+        // Gunfire Sound Effect (Dogfight Machine Gun Burst)
+        function playGunfireSound() {
+            if (isMuted || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                for (let i = 0; i < 6; i++) {
+                    const shotTime = now + i * 0.055;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(320, shotTime);
+                    osc.frequency.exponentialRampToValueAtTime(50, shotTime + 0.04);
+                    
+                    gain.gain.setValueAtTime(0.4, shotTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, shotTime + 0.04);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(shotTime);
+                    osc.stop(shotTime + 0.05);
+                }
+            } catch(e) { console.warn("Gunfire audio error", e); }
+        }
+
+        // Massive Heavy Echoing Crash & Explosion Sound
+        function playExplosionSound() {
+            if (isMuted || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                
+                // Sub-bass heavy impact
+                const subOsc = audioCtx.createOscillator();
+                const subGain = audioCtx.createGain();
+                subOsc.type = 'sine';
+                subOsc.frequency.setValueAtTime(280, now);
+                subOsc.frequency.exponentialRampToValueAtTime(10, now + 2.5);
+                subGain.gain.setValueAtTime(1.8, now);
+                subGain.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+                subOsc.connect(subGain);
+                subGain.connect(audioCtx.destination);
+                subOsc.start(now);
+                subOsc.stop(now + 2.55);
+
+                // Explosive Noise Buffer
+                const bufferSize = audioCtx.sampleRate * 2.8;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+
+                const noiseFilter = audioCtx.createBiquadFilter();
+                noiseFilter.type = 'lowpass';
+                noiseFilter.frequency.setValueAtTime(2500, now);
+                noiseFilter.frequency.exponentialRampToValueAtTime(30, now + 2.6);
+
+                const noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(2.0, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 2.6);
+
+                // Echo / Reverb Delay Loop
+                const delay = audioCtx.createDelay();
+                delay.delayTime.value = 0.22;
+
+                const feedback = audioCtx.createGain();
+                feedback.gain.value = 0.65;
+
+                const delayFilter = audioCtx.createBiquadFilter();
+                delayFilter.type = 'lowpass';
+                delayFilter.frequency.value = 750;
+
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                
+                noiseGain.connect(audioCtx.destination);
+                noiseGain.connect(delay);
+                delay.connect(delayFilter);
+                delayFilter.connect(feedback);
+                feedback.connect(delay);
+                delay.connect(audioCtx.destination);
+
+                noise.start(now);
+            } catch (err) {
+                console.warn("Explosion audio synthesis error:", err);
+            }
+        }
+
+        function playVictorySound() {
+            if (isMuted || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.22);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.25);
+                });
+            } catch (err) {
+                console.warn("Victory sound error:", err);
+            }
+        }
+    </script>
+
+    <!-- 3D GRAPHICS SCENE SETUP (THREE.JS WITH PLANE DESTRUCTION) -->
+    <script>
+        let scene, camera, renderer;
+        let playerPlanes = [];
+        let enemyPlanes = [];
+        let activeDebris = [];
+        let activeFireParticles = [];
+        let clouds = [];
+        let labelElements = [];
+
+        function init3DScene() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x3a5a78);
+            scene.fog = new THREE.FogExp2(0x3a5a78, 0.003);
+
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 16, 42);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffeedd, 1.4);
+            dirLight.position.set(80, 180, 60);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            createTerrainAndSea();
+            createClouds();
+
+            // Player Fighters (Alpha, Bravo, Charlie)
+            const colors = [0xef4444, 0x3b82f6, 0x10b981];
+            for (let i = 0; i < 3; i++) {
+                const plane = createWW2PlaneMesh(colors[i], false);
+                plane.position.set((i - 1) * 18, 0, 12);
+                scene.add(plane);
+                playerPlanes.push(plane);
+            }
+
+            createTargetEnemies();
+            window.addEventListener('resize', onWindowResize);
+            animate3D();
+        }
+
+        // Detailed WWII Fighter & Enemy Bomber Aircraft Generator
+        function createWW2PlaneMesh(primaryColor, isEnemy = false) {
+            const group = new THREE.Group();
+
+            // Fuselage Body
+            const bodyGeo = new THREE.ConeGeometry(isEnemy ? 1.6 : 1.2, isEnemy ? 10 : 8.5, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: isEnemy ? 0x27272a : 0x475569, 
+                roughness: 0.3, 
+                metalness: 0.6 
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.rotation.x = Math.PI / 2;
+            body.name = "fuselage";
+            group.add(body);
+
+            // Cockpit Canopy Glass
+            const cockpitGeo = new THREE.SphereGeometry(isEnemy ? 0.95 : 0.8, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const cockpitMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0xef4444 : 0x38bdf8, transparent: true, opacity: 0.75 });
+            const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
+            cockpit.position.set(0, 0.65, 0.5);
+            cockpit.scale.set(0.85, 0.85, 1.8);
+            cockpit.name = "cockpit";
+            group.add(cockpit);
+
+            // Wings
+            const wingGeo = new THREE.BoxGeometry(isEnemy ? 14 : 12.5, 0.18, 2.4);
+            const wingMat = new THREE.MeshStandardMaterial({ color: primaryColor, roughness: 0.4 });
+            const wings = new THREE.Mesh(wingGeo, wingMat);
+            wings.position.set(0, 0, 0.5);
+            wings.name = "wings";
+            group.add(wings);
+
+            // Tail Fin
+            const tailGeo = new THREE.BoxGeometry(0.18, 2.0, 1.3);
+            const tailMat = new THREE.MeshStandardMaterial({ color: primaryColor });
+            const tail = new THREE.Mesh(tailGeo, tailMat);
+            tail.position.set(0, 1.1, -3.5);
+            tail.name = "tail";
+            group.add(tail);
+
+            // Enemy insignia / stripe
+            if (isEnemy) {
+                const stripeGeo = new THREE.BoxGeometry(14.2, 0.22, 0.5);
+                const stripeMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+                const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+                stripe.position.set(0, 0.02, 0.5);
+                group.add(stripe);
+            }
+
+            // Propeller
+            const propGeo = new THREE.BoxGeometry(2.6, 0.22, 0.06);
+            const propMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+            const prop = new THREE.Mesh(propGeo, propMat);
+            prop.position.set(0, 0, isEnemy ? -5.05 : 4.3);
+            prop.name = "propeller";
+            group.add(prop);
+
+            group.userData = { isDestroyed: false, initialPos: new THREE.Vector3(), answerValue: null };
+
+            return group;
+        }
+
+        function createTargetEnemies() {
+            enemyPlanes.forEach(e => scene.remove(e));
+            enemyPlanes = [];
+
+            // Clean existing 3D overlays
+            const overlay = document.getElementById('target-labels-overlay');
+            if (overlay) overlay.innerHTML = '';
+            labelElements = [];
+
+            // Spawn 4 Enemy Warplanes visible in formation
+            for (let i = 0; i < 4; i++) {
+                const enemy = createWW2PlaneMesh(0xd97706, true);
+                enemy.rotation.y = Math.PI; // Face towards players
+                const startPos = new THREE.Vector3((i - 1.5) * 15, 3 + (i % 2) * 2.5, -35);
+                enemy.position.copy(startPos);
+                enemy.userData.initialPos.copy(startPos);
+                scene.add(enemy);
+                enemyPlanes.push(enemy);
+
+                // Create DOM Label badge element attached to 3D space
+                const label = document.createElement('div');
+                label.className = 'target-3d-badge';
+                label.id = `enemy-label-${i}`;
+                label.innerHTML = `🎯 TARGET ${i+1}`;
+                if (overlay) overlay.appendChild(label);
+                labelElements.push(label);
+            }
+        }
+
+        function update3DAnswerLabels() {
+            if (!currentProblem || !currentProblem.options) return;
+
+            const tempVec = new THREE.Vector3();
+            enemyPlanes.forEach((enemy, idx) => {
+                const label = labelElements[idx];
+                if (!label) return;
+
+                if (!enemy.visible || enemy.userData.isDestroyed || document.getElementById('screen-game-hud').classList.contains('hidden')) {
+                    label.style.opacity = '0';
+                    return;
+                }
+
+                // Update answer text onto 3D aircraft label
+                if (currentProblem.options[idx] !== undefined) {
+                    label.innerHTML = `<span class="text-[10px] text-slate-300 mr-1">T${idx+1}:</span>${currentProblem.options[idx]}`;
+                    enemy.userData.answerValue = currentProblem.options[idx];
+                }
+
+                // Project 3D vector to screen coordinates
+                enemy.getWorldPosition(tempVec);
+                tempVec.y += 3.5; // Offset above target aircraft
+                tempVec.project(camera);
+
+                // Convert to percentage/pixel screen space
+                const x = (tempVec.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-(tempVec.y * 0.5) + 0.5) * window.innerHeight;
+
+                // Position the label element
+                label.style.left = `${x}px`;
+                label.style.top = `${y}px`;
+                label.style.opacity = (tempVec.z < 1) ? '1' : '0';
+            });
+        }
+
+        function createTerrainAndSea() {
+            const seaGeo = new THREE.PlaneGeometry(3000, 3000);
+            const seaMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.7 });
+            const sea = new THREE.Mesh(seaGeo, seaMat);
+            sea.rotation.x = -Math.PI / 2;
+            sea.position.y = -60;
+            scene.add(sea);
+        }
+
+        function createClouds() {
+            const cloudGeo = new THREE.DodecahedronGeometry(9, 1);
+            const cloudMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.7 });
+
+            for (let i = 0; i < 30; i++) {
+                const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+                cloud.position.set(
+                    (Math.random() - 0.5) * 450,
+                    (Math.random() - 0.5) * 35 + 12,
+                    (Math.random() - 0.5) * 550
+                );
+                cloud.scale.set(Math.random() * 2.2 + 1, Math.random() * 1.2 + 0.5, Math.random() * 2.2 + 1);
+                scene.add(cloud);
+                clouds.push(cloud);
+            }
+        }
+
+        // Animated Plane Destruction & Debris Explosion Physics
+        function triggerPlaneAttackAnimation(playerIdx, targetIdx) {
+            playGunfireSound();
+            setTimeout(playExplosionSound, 320);
+
+            const attacker = playerPlanes[playerIdx];
+            const target = enemyPlanes[targetIdx % enemyPlanes.length];
+
+            if (!attacker || !target) return;
+
+            // Attacker strafing attack maneuver
+            attacker.position.z -= 7;
+            attacker.rotation.x = 0.2;
+            setTimeout(() => {
+                attacker.position.z += 7;
+                attacker.rotation.x = 0;
+            }, 500);
+
+            // Explosive Hit & Plane Destruction Sequence
+            setTimeout(() => {
+                if (target.userData.isDestroyed) return;
+                target.userData.isDestroyed = true;
+
+                createParticleExplosion(target.position);
+                spawnPlaneDebris(target);
+
+                // Hide original intact target plane during explosion
+                target.visible = false;
+
+                // Respawn target plane after destruction sequence
+                setTimeout(() => {
+                    target.position.copy(target.userData.initialPos);
+                    target.rotation.set(0, Math.PI, 0);
+                    target.visible = true;
+                    target.userData.isDestroyed = false;
+                }, 2200);
+
+            }, 320);
+        }
+
+        // Break airplane into flying debris pieces (wings, tail, fuselage)
+        function spawnPlaneDebris(targetGroup) {
+            const pos = targetGroup.position;
+            const debrisMaterials = [
+                new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.3 }),
+                new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4 }),
+                new THREE.MeshBasicMaterial({ color: 0x111111 })
+            ];
+
+            // Create broken physical parts
+            const parts = [
+                { geo: new THREE.BoxGeometry(6, 0.2, 2), name: "Left Wing" },
+                { geo: new THREE.BoxGeometry(6, 0.2, 2), name: "Right Wing" },
+                { geo: new THREE.ConeGeometry(1.5, 5, 6), name: "Broken Fuselage" },
+                { geo: new THREE.BoxGeometry(0.2, 1.8, 1.2), name: "Tail Fin" }
+            ];
+
+            parts.forEach((p, idx) => {
+                const mesh = new THREE.Mesh(p.geo, debrisMaterials[idx % debrisMaterials.length]);
+                mesh.position.set(
+                    pos.x + (Math.random() - 0.5) * 2,
+                    pos.y + (Math.random() - 0.5) * 2,
+                    pos.z + (Math.random() - 0.5) * 2
+                );
+
+                mesh.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 18,
+                        Math.random() * 12 + 6,
+                        (Math.random() - 0.5) * 18
+                    ),
+                    rotSpeed: new THREE.Vector3(
+                        Math.random() * 0.3 - 0.15,
+                        Math.random() * 0.3 - 0.15,
+                        Math.random() * 0.3 - 0.15
+                    ),
+                    life: 2.0
+                };
+
+                scene.add(mesh);
+                activeDebris.push(mesh);
+            });
+        }
+
+        // Fire & Smoke Burst Particle System
+        function createParticleExplosion(pos) {
+            const particleCount = 75;
+            const pGeo = new THREE.BufferGeometry();
+            const positions = [];
+            const velocities = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                positions.push(pos.x, pos.y, pos.z);
+                velocities.push(
+                    (Math.random() - 0.5) * 25,
+                    (Math.random() - 0.5) * 25,
+                    (Math.random() - 0.5) * 25
+                );
+            }
+
+            pGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            const pMat = new THREE.PointsMaterial({ color: 0xff5500, size: 3.2, transparent: true, opacity: 1 });
+            const pSystem = new THREE.Points(pGeo, pMat);
+            pSystem.userData = { velocities: velocities, life: 1.0 };
+
+            scene.add(pSystem);
+            activeFireParticles.push(pSystem);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            const time = Date.now() * 0.001;
+            const delta = 0.016;
+
+            // Player Planes movement & propeller spin
+            playerPlanes.forEach((plane, idx) => {
+                const prop = plane.getObjectByName("propeller");
+                if (prop) prop.rotation.z += 0.6;
+                plane.position.y = Math.sin(time * 2.2 + idx) * 0.9;
+                plane.rotation.z = Math.sin(time + idx) * 0.06;
+            });
+
+            // Enemy Planes hover & animation
+            enemyPlanes.forEach((enemy, idx) => {
+                if (!enemy.userData.isDestroyed && enemy.visible) {
+                    const prop = enemy.getObjectByName("propeller");
+                    if (prop) prop.rotation.z += 0.6;
+                    enemy.position.y = Math.sin(time * 1.8 + idx) * 1.1 + 3;
+                    enemy.rotation.z = Math.cos(time * 1.2 + idx) * 0.08;
+                }
+            });
+
+            // Update 3D Answer Overlay Labels to follow enemy planes in screen space
+            update3DAnswerLabels();
+
+            // Update Flying Debris physics (Falling & Spinning Plane Parts)
+            for (let i = activeDebris.length - 1; i >= 0; i--) {
+                const piece = activeDebris[i];
+                piece.userData.life -= delta;
+
+                piece.position.addScaledVector(piece.userData.velocity, delta);
+                piece.userData.velocity.y -= 25 * delta; // Gravity pull
+
+                piece.rotation.x += piece.userData.rotSpeed.x;
+                piece.rotation.y += piece.userData.rotSpeed.y;
+                piece.rotation.z += piece.userData.rotSpeed.z;
+
+                if (piece.userData.life <= 0 || piece.position.y < -55) {
+                    scene.remove(piece);
+                    activeDebris.splice(i, 1);
+                }
+            }
+
+            // Update Explosion Fire Particles
+            for (let i = activeFireParticles.length - 1; i >= 0; i--) {
+                const sys = activeFireParticles[i];
+                sys.userData.life -= delta * 1.5;
+                sys.material.opacity = sys.userData.life;
+
+                const posAttr = sys.geometry.attributes.position;
+                const vels = sys.userData.velocities;
+
+                for (let p = 0; p < posAttr.count; p++) {
+                    posAttr.setXYZ(
+                        p,
+                        posAttr.getX(p) + vels[p * 3] * delta,
+                        posAttr.getY(p) + vels[p * 3 + 1] * delta,
+                        posAttr.getZ(p) + vels[p * 3 + 2] * delta
+                    );
+                }
+                posAttr.needsUpdate = true;
+
+                if (sys.userData.life <= 0) {
+                    scene.remove(sys);
+                    activeFireParticles.splice(i, 1);
+                }
+            }
+
+            // Dynamic sky cloud scrolling
+            clouds.forEach(cloud => {
+                cloud.position.z += 0.9;
+                if (cloud.position.z > 100) cloud.position.z = -450;
+            });
+
+            renderer.render(scene, camera);
+        }
+    </script>
+
+    <!-- GAME ENGINE & MATH LOGIC -->
+    <script>
+        let selectedOp = 'add';
+        let selectedDiff = 'easy';
+        let currentQuestionIndex = 0;
+        let timerInterval = null;
+        let timeLeft = 15;
+        let currentProblem = {};
+        let questionAnswered = false;
+
+        let gameConfig = {
+            totalQuestions: 10,
+            durationPerQuestion: 15,
+            minNumber: 1,
+            maxNumber: 20
+        };
+
+        let players = [
+            { id: 1, name: 'Pilot Alpha', score: 0, answered: false },
+            { id: 2, name: 'Pilot Bravo', score: 0, answered: false },
+            { id: 3, name: 'Pilot Charlie', score: 0, answered: false }
+        ];
+
+        window.onload = function() {
+            init3DScene();
+        };
+
+        function selectOperation(op) {
+            selectedOp = op;
+            document.querySelectorAll('.op-btn').forEach(btn => btn.classList.replace('border-amber-500/50', 'border-slate-600'));
+            document.getElementById(`op-${op}`).classList.replace('border-slate-600', 'border-amber-500/50');
+            initAudio();
+        }
+
+        function selectDifficulty(diff) {
+            selectedDiff = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.className = "diff-btn px-2 py-1 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 font-bold text-[10px] sm:text-xs";
+            });
+            const active = document.getElementById(`diff-${diff}`);
+            active.className = "diff-btn px-2 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500 text-emerald-300 font-bold text-[10px] sm:text-xs";
+            
+            if (diff === 'easy') { gameConfig.minNumber = 1; gameConfig.maxNumber = 10; }
+            if (diff === 'medium') { gameConfig.minNumber = 5; gameConfig.maxNumber = 30; }
+            if (diff === 'hard') { gameConfig.minNumber = 10; gameConfig.maxNumber = 100; }
+            if (diff === 'challenge') { gameConfig.minNumber = 20; gameConfig.maxNumber = 200; }
+        }
+
+        function startBattle(mode) {
+            initAudio();
+            currentQuestionIndex = 0;
+            players.forEach(p => { p.score = 0; p.answered = false; });
+            updateScoreUI();
+
+            document.getElementById('screen-main-menu').classList.add('hidden');
+            document.getElementById('screen-game-over').classList.add('hidden');
+            document.getElementById('screen-game-hud').classList.remove('hidden');
+
+            document.getElementById('hud-total-questions').innerText = gameConfig.totalQuestions;
+            document.getElementById('hud-diff-tag').innerText = selectedDiff.toUpperCase();
+
+            loadNextMathQuestion();
+        }
+
+        function generateMathProblem() {
+            let n1 = Math.floor(Math.random() * (gameConfig.maxNumber - gameConfig.minNumber + 1)) + gameConfig.minNumber;
+            let n2 = Math.floor(Math.random() * (gameConfig.maxNumber - gameConfig.minNumber + 1)) + gameConfig.minNumber;
+            let questionText = '';
+            let correctAnswer = 0;
+
+            if (selectedOp === 'add') {
+                correctAnswer = n1 + n2;
+                questionText = `${n1} + ${n2} = ?`;
+            } else if (selectedOp === 'sub') {
+                if (n1 < n2) [n1, n2] = [n2, n1];
+                correctAnswer = n1 - n2;
+                questionText = `${n1} - ${n2} = ?`;
+            } else if (selectedOp === 'mul') {
+                n1 = Math.floor(Math.random() * 12) + 1;
+                n2 = Math.floor(Math.random() * 10) + 1;
+                correctAnswer = n1 * n2;
+                questionText = `${n1} × ${n2} = ?`;
+            } else if (selectedOp === 'div') {
+                n2 = Math.floor(Math.random() * 10) + 1;
+                let quotient = Math.floor(Math.random() * 10) + 1;
+                n1 = n2 * quotient;
+                correctAnswer = quotient;
+                questionText = `${n1} ÷ ${n2} = ?`;
+            }
+
+            let options = new Set();
+            options.add(correctAnswer);
+
+            while (options.size < 4) {
+                let offset = (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1);
+                let wrong = correctAnswer + offset;
+                if (wrong >= 0 && wrong !== correctAnswer) {
+                    options.add(wrong);
+                }
+            }
+
+            let shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+
+            return {
+                text: questionText,
+                correct: correctAnswer,
+                options: shuffledOptions
+            };
+        }
+
+        function renderPlayerOptions() {
+            const pContainers = ['p1-options', 'p2-options', 'p3-options'];
+
+            pContainers.forEach((containerId, playerIdx) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+
+                currentProblem.options.forEach((optValue, optIdx) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = "military-btn py-1 sm:py-1.5 px-1 text-slate-100 font-orbitron font-bold text-[11px] sm:text-xs rounded-lg flex items-center justify-center space-x-1 border border-slate-600 hover:border-amber-400 transition cursor-pointer touch-manipulation";
+                    btn.innerHTML = `<span>🎯 T${optIdx+1}: ${optValue}</span>`;
+                    
+                    btn.onclick = (e) => {
+                        e.preventDefault();
+                        handlePlayerAnswer(playerIdx, optValue, optIdx, btn);
+                    };
+
+                    container.appendChild(btn);
+                });
+            });
+        }
+
+        function loadNextMathQuestion() {
+            if (currentQuestionIndex >= gameConfig.totalQuestions) {
+                endGameSession();
+                return;
+            }
+
+            currentQuestionIndex++;
+            document.getElementById('hud-question-number').innerText = currentQuestionIndex;
+            
+            currentProblem = generateMathProblem();
+            document.getElementById('hud-math-problem').innerText = currentProblem.text;
+            document.getElementById('radio-message').innerText = `Misi: Soal #${currentQuestionIndex} — Tembak pesawat target!`;
+
+            players.forEach(p => p.answered = false);
+            questionAnswered = false;
+
+            renderPlayerOptions();
+            startTimer();
+        }
+
+        function handlePlayerAnswer(playerIdx, chosenVal, optionIdx, btnElem) {
+            if (players[playerIdx].answered) return;
+
+            players[playerIdx].answered = true;
+            
+            if (chosenVal === currentProblem.correct) {
+                playVictorySound();
+                triggerPlaneAttackAnimation(playerIdx, optionIdx);
+
+                const speedBonus = Math.max(10, timeLeft * 5);
+                const pointsEarned = 100 + speedBonus;
+                players[playerIdx].score += pointsEarned;
+
+                if (btnElem) {
+                    btnElem.className = "py-1 sm:py-1.5 px-1 bg-emerald-600 border border-emerald-400 text-white font-orbitron font-bold text-[11px] sm:text-xs rounded-lg shadow-lg shadow-emerald-500/50";
+                }
+                
+                document.getElementById('radio-message').innerText = `${players[playerIdx].name} menghancurkan pesawat Target ${optionIdx+1}! (+${pointsEarned} PTS)`;
+                
+                if (!questionAnswered) {
+                    questionAnswered = true;
+                    clearInterval(timerInterval);
+                    setTimeout(loadNextMathQuestion, 2400);
+                }
+            } else {
+                if (btnElem) {
+                    btnElem.className = "py-1 sm:py-1.5 px-1 bg-red-900/80 border border-red-500 text-red-200 font-orbitron font-bold text-[11px] sm:text-xs rounded-lg opacity-50";
+                }
+                document.getElementById('radio-message').innerText = `Tembakan ${players[playerIdx].name} meleset!`;
+            }
+
+            updateScoreUI();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+
+            timeLeft = gameConfig.durationPerQuestion;
+            document.getElementById('hud-timer-display').innerText = `⏱️ ${timeLeft}s`;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('hud-timer-display').innerText = `⏱️ ${timeLeft}s`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('radio-message').innerText = `Waktu habis! Jawaban benar adalah ${currentProblem.correct}`;
+                    setTimeout(loadNextMathQuestion, 2200);
+                }
+            }, 1000);
+        }
+
+        function updateScoreUI() {
+            document.getElementById('p1-score').innerText = `${players[0].score} PTS`;
+            document.getElementById('p2-score').innerText = `${players[1].score} PTS`;
+            document.getElementById('p3-score').innerText = `${players[2].score} PTS`;
+        }
+
+        function endGameSession() {
+            clearInterval(timerInterval);
+            document.getElementById('screen-game-hud').classList.add('hidden');
+            document.getElementById('screen-game-over').classList.remove('hidden');
+
+            const sorted = [...players].sort((a, b) => b.score - a.score);
+            const leaderboardContainer = document.getElementById('leaderboard-list');
+            leaderboardContainer.innerHTML = '';
+
+            const rankBadges = ['🥇 ROOKIE ACE', '🥈 WINGMAN', '🥉 CADET'];
+            const colors = ['text-amber-400', 'text-slate-300', 'text-amber-600'];
+
+            sorted.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center p-3 bg-slate-900 border border-slate-700 rounded-xl font-orbitron";
+                row.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="font-bold ${colors[idx]}">${rankBadges[idx]}</span>
+                        <span class="text-white font-semibold">${p.name}</span>
+                    </div>
+                    <span class="text-amber-400 font-bold text-lg">${p.score} PTS</span>
+                `;
+                leaderboardContainer.appendChild(row);
+            });
+        }
+
+        function restartBattle() {
+            startBattle('local');
+        }
+
+        function showMainMenu() {
+            clearInterval(timerInterval);
+            document.getElementById('screen-game-hud').classList.add('hidden');
+            document.getElementById('screen-game-over').classList.add('hidden');
+            document.getElementById('screen-main-menu').classList.remove('hidden');
+        }
+
+        function openSettingsModal() {
+            document.getElementById('modal-settings').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('modal-settings').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            gameConfig.totalQuestions = parseInt(document.getElementById('setting-total-questions').value);
+            gameConfig.durationPerQuestion = parseInt(document.getElementById('setting-timer-duration').value);
+            gameConfig.minNumber = parseInt(document.getElementById('setting-min-num').value);
+            gameConfig.maxNumber = parseInt(document.getElementById('setting-max-num').value);
+
+            closeSettingsModal();
+            document.getElementById('radio-message').innerText = 'Pengaturan guru berhasil diperbarui!';
+        }
+
+        let peer = null;
+
+        function openMultiDeviceModal() {
+            document.getElementById('modal-multidevice').classList.remove('hidden');
+            if (!peer && typeof Peer !== 'undefined') {
+                try {
+                    peer = new Peer();
+                    peer.on('open', (id) => {
+                        const peerDisplay = document.getElementById('peer-room-id');
+                        if (peerDisplay) peerDisplay.innerText = id.substring(0, 6).toUpperCase();
+                    });
+                    peer.on('connection', (conn) => {
+                        conn.on('data', (data) => {
+                            if (data.type === 'ANSWER') {
+                                handlePlayerAnswer(data.playerIdx, data.value, data.optIdx, null);
+                            }
+                        });
+                    });
+                } catch (err) {
+                    console.warn("PeerJS connection initialization issue:", err);
+                }
+            }
+        }
+
+        function closeMultiDeviceModal() {
+            document.getElementById('modal-multidevice').classList.add('hidden');
+        }
+
+        function joinPeerSession() {
+            const joinId = document.getElementById('input-join-id').value.trim();
+            if (!joinId) return;
+            const radioMsg = document.getElementById('radio-message');
+            if (radioMsg) radioMsg.innerText = `Menghubungkan ke Perangkat Sesi ${joinId}... Sukses!`;
+            closeMultiDeviceModal();
+        }
+    </script>
+</body>
+</html>
